@@ -32,16 +32,17 @@ library(ggthemes)
 p <- ggplot(data = plotData, mapping = aes(x = long, y = lat, group = group)) +
   geom_polygon(data = plotData[plotData$id %in% plotData[plotData$hole,]$id,], aes(fill = procent_wyzsze_wyksztalcenie), color = "white", size = 0.1) +
   geom_polygon(data = plotData[!plotData$id %in% plotData[plotData$hole,]$id,], aes(fill = procent_wyzsze_wyksztalcenie), color = "white", size= 0.1) +
-  # geom_polygon(mapping = aes(group = group, fill = procent_wyzsze_wyksztalcenie), color = "white") +
   facet_wrap(facets = ~rok, ncol = 4) +
   scale_fill_distiller("%", palette = "RdYlGn", breaks = pretty_breaks(n = 6),
                        trans = "reverse", labels = percent) +
   guides(fill = guide_legend(reverse = TRUE)) +
   ggtitle(label = "Procent osób z wyższym wykształceniem", subtitle = "W podziale na podregiony") + 
   theme_map(base_size = 18) +
-  theme(plot.title=element_text(size=24, hjust = 0.5),
-        plot.subtitle=element_text(size=22, hjust = 0.5),
-        legend.position="right")
+  theme(plot.title=element_text(size=24, hjust = 0.5, family = "mono"),
+        plot.subtitle=element_text(size=22, hjust = 0.5, family = "mono"),
+        legend.position = "right",
+        legend.key.height = unit(1.6, "cm"),
+        legend.key.width = unit(1, "cm"))
 p
 
 ggsave("wyksztalcenie_podregiony_w_czasie.png", plot = p, width = 12, height = 6)
