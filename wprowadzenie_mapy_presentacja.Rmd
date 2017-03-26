@@ -1,0 +1,219 @@
+---
+title: "I Ty możesz zostać kartografem!"
+author: "Piotr J. Sobczyk"
+date: "25 March 2017"
+output:
+  ioslides_presentation:
+    incremental: true
+    logo: figure/logo.png
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Czego nauczymy się na tych warsztatach?
+
+----
+
+> - Ściągania map google, nanoszenia punktów na te mapy 
+> - Znajdowania współrzędnych geograficznych miejscowości
+> - Tworzenia map z obszarmi wyodrębnionymi kolorem (*choropleth*)
+
+> - Zacznijmy naszą przygodę.
+
+## Instalacja niezbędnych pakietów
+
+```{r, eval = FALSE}
+install.packages(c("dplyr", "ggplot2", "ggthemes", "ggmap"))
+```
+
+```{r, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggmap)
+library(ggthemes)
+```
+
+## Ściąganie mapy z google lub open street maps {.flexbox .vcenter}
+
+```{r, cache = TRUE, message = FALSE}
+wroclaw_mapa <- get_map(location = "wrocław", zoom = 10)
+ggmap(wroclaw_mapa, extent = "normal")
+```
+
+---- {.flexbox .vcenter}
+
+```{r, cache = TRUE, message=FALSE}
+wroclaw_mapa <- get_map(location = c(17, 51.1), zoom = 12)
+ggmap(wroclaw_mapa)
+```
+
+----
+
+Jeśli nie będzie działało to trzeba zainstalować starszą wersję *ggplot2*.
+
+```{r, eval = FALSE}
+devtools::install_github("hadley/ggplot2@v2.2.0")
+```
+
+
+## Zaznaczanie punktów
+
+Oznaczmy na mapie Wrocławia miejsca, w których odbywały się spotkania STWURa.
+
+```{r, message=FALSE}
+miejsca <- c("Wydział Biotechnologii, Wrocław", "Infopunkt Łokietka", "Wydział Matematyki PWr")
+wspolrzedne <- geocode(miejsca)
+miejsca <- cbind(miejsca, wspolrzedne)
+miejsca$liczba_spotkan <- c(3, 1, 1)
+```
+
+Weżmy mapę, którą wcześniej ściągnęliśmy
+
+---- 
+
+```{r}
+ggmap(wroclaw_mapa) +
+  geom_point(data = miejsca, aes(x = lon, y = lat))
+```
+
+----
+
+```{r}
+ggmap(wroclaw_mapa) +
+  geom_point(data = miejsca, aes(x = lon, y = lat, size = liczba_spotkan)) +
+  theme_map()
+```
+
+----
+
+```{r, cache = TRUE, message = FALSE}
+wroclaw_mapa <- get_map(location = "wrocław", zoom = 13, maptype = "roadmap", color = "bw")
+ggmap(wroclaw_mapa) +
+  geom_point(data = miejsca, aes(x = lon, y = lat, color = miejsca, size = liczba_spotkan)) +
+  theme_map() + scale_fill_discrete(name = "")
+```
+
+# Choreopleth
+
+----
+
+Jeśli chcemy wyróżnić konkretne obszary kolorem, np. województwo w zależności od procenta ludności z wyższym wykształceniem,
+to potrzebujemy nieco innych narzędzi w R, a przede wszystkim potrzebujemy danych definiujących poszczególne obszary.
+Takie dane często zapisywane są w plikach shapefile (.shp) lub GeoJSON. Dla zastosowań nie komercyjnych podział Polski i Europy można
+ściągnąć ze stron GUSu i Eurostatu. Tutaj stosujemy już przetworzone dane. Skrypt służące do ich wygenerowania znajdują się na githubie.
+
+
+## Najpierw przetwarzamy dane
+
+```{r, warning = FALSE}
+load("data/ksztalt_wojewodztw_data_frame.Rdata")
+edu <- read.csv("data/education_data.csv")
+
+edu_podsumowanie <- edu %>% 
+  filter(rok == 2015) %>%
+  group_by(wojewodztwo) %>%
+  summarise(procent_wyzsze_wyksztalcenie = sum(waga[edukacja == 'wyższe i policealne'])/sum(waga)) %>%
+  mutate(wojewodztwo = tolower(wojewodztwo)) %>% 
+  inner_join(wojewodztwa_nazwy_kody, by = c("wojewodztwo"="woj"))
+
+plotData <- inner_join(Wojewodztwa, edu_podsumowanie, by = "id")
+```
+
+## Co się dzieje w kodzie powyżej krok po kroku
+
+Filtrowanie obserwacji z roku 2015
+```{r, eval = FALSE}
+edu %>% 
+  filter(rok == 2015) 
+```
+
+## Co się dzieje w kodzie powyżej krok po kroku
+
+Policzenie procenta osób z wyższym wykształceniem w podziale na województwa
+```{r, eval = FALSE}
+group_by(wojewodztwo) %>%
+  summarise(procent_wyzsze_wyksztalcenie = sum(waga[edukacja == 'wyższe i policealne'])/sum(waga)) 
+```
+
+## Co się dzieje w kodzie powyżej krok po kroku
+
+Techniczne. Połączenie z data.frame *wojewodztwa_nazwy_kody*.
+
+```{r, eval = FALSE}
+mutate(wojewodztwo = tolower(wojewodztwo)) %>% 
+  inner_join(wojewodztwa_nazwy_kody, by = c("wojewodztwo"="woj")) 
+```
+
+## Co się dzieje w kodzie powyżej krok po kroku
+
+Połączenie z data.frame zwierającym definicje obszarów województw
+
+```{r, eval = FALSE}
+plotData <- inner_join(Wojewodztwa, edu_podsumowanie, by = "id")
+```
+
+# Wizualizacja
+
+## Wizualizacja {.flexbox .vcenter}
+
+```{r, fig.height = 4, fig.width = 6, warning = FALSE}
+library(scales) #pretty breaks, percent
+ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
+  geom_polygon(mapping = aes(group = group, fill = procent_wyzsze_wyksztalcenie))
+```
+
+---- {.flexbox .vcenter}
+
+![ ](figure/sad_puppy.jpeg)
+
+## Jak to naprawić?
+
+```{r, fig.height=4, fig.width=5}
+ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
+  geom_polygon(mapping = aes(group = group, fill = procent_wyzsze_wyksztalcenie)) +
+  scale_fill_distiller("%", palette = "YlGn", breaks = pretty_breaks(n = 6),
+                       trans = "reverse", labels = percent)
+```
+
+## Teraz technikalia:
+
+* Usuwamy opisu osi
+* Zmieniamy kolejność kolorów i wielkość legendy
+* Dodajemy tytuł wykresu
+
+```{r, eval = FALSE, fig.height=6, fig.width=9}
+ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
+  geom_polygon(mapping = aes(group = group, fill = procent_wyzsze_wyksztalcenie)) +
+  scale_fill_distiller("%", palette = "YlGn", breaks = pretty_breaks(n = 6),
+                       trans = "reverse", labels = percent) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  ggtitle(label = "Procent osób z wyższym wykształceniem", subtitle = "W podziale na województwa w 2015") + 
+  theme_map(base_size = 18) +
+  theme(plot.title = element_text(size = 24, hjust = 0.5, family = "mono"),
+        plot.subtitle = element_text(size = 22, hjust = 0.5, family = "mono"),
+        legend.position = "right",
+        legend.key.height = unit(3, "cm"),
+        legend.key.width = unit(1.5, "cm"))
+```
+
+----
+```{r, echo = FALSE, fig.height=6, fig.width=9}
+ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
+  geom_polygon(mapping = aes(group = group, fill = procent_wyzsze_wyksztalcenie)) +
+  scale_fill_distiller("%", palette = "YlGn", breaks = pretty_breaks(n = 6),
+                       trans = "reverse", labels = percent) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  ggtitle(label = "Procent osób z wyższym wykształceniem", subtitle = "W podziale na województwa w 2015") + 
+  theme_map(base_size = 18) +
+  theme(plot.title = element_text(size = 24, hjust = 0.5, family = "mono"),
+        plot.subtitle = element_text(size = 22, hjust = 0.5, family = "mono"),
+        legend.position = "right",
+        legend.key.height = unit(3, "cm"),
+        legend.key.width = unit(1.5, "cm"))
+```
+
+
+
