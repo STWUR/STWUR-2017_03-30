@@ -24,6 +24,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Instalacja niezbędnych pakietów
 
+[https://tinyurl.com/STWUR-3](https://tinyurl.com/STWUR-3) - link do repozytorium.
+
+
+Pliki: 
+
+* **wprowadzenie_mapy_prezentacja.Rmd** - ta prezentacja.
+* **wprowadzenie_mapy.Rmd** - porady jak tworzyć mapy w R (nie-prezentacja).
+* **wprowadzenie_mapy.R** - kod R z pliku **wprowadzenie_mapy.Rmd**.
+
+## Instalacja niezbędnych pakietów
+
 ```{r, eval = FALSE}
 install.packages(c("dplyr", "ggplot2", "ggthemes", "ggmap"))
 ```
