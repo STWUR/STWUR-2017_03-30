@@ -227,5 +227,14 @@ ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
         legend.key.width = unit(1.1, "cm"))
 ```
 
+## Podziękowania
 
+Nasi sponsorzy:
+
+* Doktoranckie Koło Naukowe Bioinformatyki,
+* Koło Naukowe Statystyki Matematycznej Gauss,
+* Uniwersytet Wrocławski,
+* Krajowy Naukowy Ośrodek Wiodący Wrocławskie Centrum Biotechnologii.
+
+Spotkanie socjalne: 20:00, Przekręt (Curie-Skłodowskiej 1)
 
