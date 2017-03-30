@@ -140,7 +140,7 @@ plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = "id")
 
 Filtrowanie obserwacji z roku 2015
 ```{r, eval = FALSE}
-edu %>% 
+internet_dat %>% 
   filter(rok == 2015) 
 ```
 
@@ -149,7 +149,7 @@ edu %>%
 Policzenie procenta osób z wyższym wykształceniem w podziale na województwa
 ```{r, eval = FALSE}
 group_by(wojewodztwo) %>%
-  summarise(procent_wyzsze_wyksztalcenie = sum(waga[edukacja == 'wyższe i policealne'])/sum(waga)) 
+  summarise(przecietnie_godzin_internetu = sum(waga*godzin_internetu)/sum(waga)) 
 ```
 
 ## Co się dzieje w kodzie powyżej krok po kroku
