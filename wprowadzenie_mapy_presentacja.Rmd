@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 * Ściągania map google, nanoszenia punktów na te mapy 
 * Znajdowania współrzędnych geograficznych miejscowości
-* Tworzenia map z obszarmi wyodrębnionymi kolorem (*choropleth*)
+* Tworzenia map z obszarami wyodrębnionymi kolorem (kartogramów)
 * Zacznijmy naszą przygodę.
 
 ## Instalacja niezbędnych pakietów
@@ -75,7 +75,7 @@ Oznaczmy na mapie Wrocławia miejsca, w których odbywały się spotkania STWURa
 
 ```{r, message=FALSE, cache = TRUE}
 miejsca <- c("Wydział Biotechnologii, Wrocław", "Infopunkt Łokietka", "Wydział Matematyki PWr")
-wspolrzedne <- geocode(miejsca)
+wspolrzedne <- geocode(miejsca) # dzienny limit użyć funkcji: 2500
 miejsca <- cbind(miejsca, wspolrzedne)
 miejsca$liczba_spotkan <- c(3, 1, 1)
 ```
@@ -106,7 +106,7 @@ ggmap(wroclaw_mapa) +
   theme_map() + scale_fill_discrete(name = "")
 ```
 
-# Choreopleth
+# Kartogram (choropleth)
 
 ----
 
@@ -127,21 +127,28 @@ internet_dat <- read.csv(file = "data/internet_data.csv")
 load("data/ksztalt_wojewodztw_data_frame.Rdata")
 
 internet_podsumowanie <- internet_dat %>% 
+  mutate(woj_id = as.character(woj_id)) %>% 
   filter(rok == 2015) %>%
-  group_by(wojewodztwo) %>%
-  summarise(przecietnie_godzin_internetu = sum(waga*godzin_internetu)/sum(waga)) %>%
-  mutate(wojewodztwo = tolower(wojewodztwo)) %>% 
-  inner_join(wojewodztwa_nazwy_kody, by = c("wojewodztwo"="woj"))
+  group_by(wojewodztwo, woj_id) %>%
+  summarise(przecietnie_godzin_internetu = sum(waga*godzin_internetu)/sum(waga)) 
 
-plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = "id")
+plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = c("id" = "woj_id"))
 ```
+
+## Co się dzieje w kodzie powyżej krok po kroku
+
+Techniczne: zmiana typu zmiennej, aby umożliwić później łączenie danych.
+```{r, eval = FALSE}
+internet_dat %>% 
+  mutate(woj_id = as.character(woj_id))
+```
+
 
 ## Co się dzieje w kodzie powyżej krok po kroku
 
 Filtrowanie obserwacji z roku 2015
 ```{r, eval = FALSE}
-edu %>% 
-  filter(rok == 2015) 
+filter(rok == 2015) 
 ```
 
 ## Co się dzieje w kodzie powyżej krok po kroku
@@ -154,19 +161,10 @@ group_by(wojewodztwo) %>%
 
 ## Co się dzieje w kodzie powyżej krok po kroku
 
-Techniczne. Połączenie z data.frame *wojewodztwa_nazwy_kody*.
-
-```{r, eval = FALSE}
-mutate(wojewodztwo = tolower(wojewodztwo)) %>% 
-  inner_join(wojewodztwa_nazwy_kody, by = c("wojewodztwo"="woj")) 
-```
-
-## Co się dzieje w kodzie powyżej krok po kroku
-
 Połączenie z data.frame zwierającym definicje obszarów województw
 
 ```{r, eval = FALSE}
-plotData <- inner_join(Wojewodztwa, edu_podsumowanie, by = "id")
+plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = c("id" = "woj_id"))
 ```
 
 # Wizualizacja
