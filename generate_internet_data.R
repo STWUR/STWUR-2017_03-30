@@ -6,6 +6,17 @@
 load("./Diagnoza_dane-master/osoby.RData")
 load("./Diagnoza_dane-master/osobyDict.RData")
 
+load("data/ksztalt_wojewodztw_data_frame.Rdata")
+#poprawienie kodowania, tak żeby móc połącyć z danymi z diagnozy
+wojewodztwa_nazwy_kody <- mutate(wojewodztwa_nazwy_kody, woj = as.character(woj))
+Encoding(wojewodztwa_nazwy_kody$woj) <- "UTF-8"
+
+# lub
+# wojewodztwa_nazwy_kody <- mutate(wojewodztwa_nazwy_kody,
+#                                 woj = iconv(woj))
+
+
+
 library(haven)
 library(dplyr)
 
@@ -18,8 +29,6 @@ internet_pytanie <- grep(pattern = ".*godzin w ostatnim tygodniu korzyst.*", x =
 #   filter(number_of_na != length(internet_pytanie)) %>% 
 #   filter(number_of_na != 5)
 
-wojewodztwa_nazwy_kody <- mutate(wojewodztwa_nazwy_kody, woj = as.character(woj))
-Encoding(wojewodztwa_nazwy_kody$woj) <- "UTF-8"
 
 internet_dat <- do.call(rbind, lapply(1:6, function(i) {
   j <- i
@@ -47,33 +56,18 @@ internet_dat <- do.call(rbind, lapply(1:6, function(i) {
 })) %>%
   mutate(godzin_internetu = as.numeric(as.character(godzin_internetu))) %>%
   filter(!is.na(godzin_internetu)) %>% 
-  mutate(wojewodztwo2 = tolower(wojewodztwo)) %>% 
+  mutate(wojewodztwo2 = iconv(tolower(wojewodztwo))) %>% 
   inner_join(wojewodztwa_nazwy_kody, by = c("wojewodztwo2"="woj")) %>% 
   mutate(woj_id = id) %>% 
   select(-teryt, -wojewodztwo2, -id) 
 
-write.csv(internet_dat, file = "data/internet_data.csv", row.names = FALSE)
+write.csv(internet_dat, file = "./data/internet_data.csv", row.names = FALSE)
 
-# internet_dat <- read.csv(file = "internet_data.csv")
-# load("data/ksztalt_wojewodztw_data_frame.Rdata")
-# 
-# internet_podsumowanie <- internet_dat %>% 
-#   mutate(woj_id = as.character(woj_id)) %>% 
-#   filter(rok == 2015) %>%
-#   group_by(wojewodztwo, woj_id) %>%
-#   summarise(przecietnie_godzin_internetu = sum(waga*godzin_internetu)/sum(waga)) 
-# 
-# plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = c("id" = "woj_id"))
-# 
-# ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
-#   geom_polygon(mapping = aes(group = group, fill = przecietnie_godzin_internetu)) +
-#   scale_fill_distiller("%", palette = "YlGn", breaks = pretty_breaks(n = 6),
-#                        trans = "reverse") +
-#   guides(fill = guide_legend(reverse = TRUE)) +
-#   ggtitle(label = "Liczba godzin spędzanych tygodniowo w internecie", subtitle = "Średnia w podziale na województwa w 2015") + 
-#   theme_map(base_size = 18) +
-#   theme(plot.title = element_text(size = 24, hjust = 0.5, family = "mono"),
-#         plot.subtitle = element_text(size = 22, hjust = 0.5, family = "mono"),
-#         legend.position = "right",
-#         legend.key.height = unit(3, "cm"),
-#         legend.key.width = unit(1.5, "cm"))
+
+internet_podsumowanie <- internet_dat %>% 
+  mutate(woj_id = as.character(woj_id)) %>% 
+  filter(rok == 2015) %>%
+  group_by(wojewodztwo, woj_id) %>%
+  summarise(przecietnie_godzin_internetu = sum(waga*godzin_internetu)/sum(waga)) 
+
+plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = c("id" = "woj_id"))
