@@ -44,7 +44,7 @@ internet_dat <- do.call(rbind, lapply(1:6, function(i) {
 })) %>%
   mutate(godzin_internetu = as.numeric(as.character(godzin_internetu))) %>%
   filter(!is.na(godzin_internetu)) %>% 
-  mutate(wojewodztwo2 = tolower(wojewodztwo)) %>% 
+  mutate(wojewodztwo2 = iconv(tolower(wojewodztwo))) %>% 
   inner_join(wojewodztwa_nazwy_kody, by = c("wojewodztwo2"="woj")) %>% 
   mutate(woj_id = id) %>% 
   select(-teryt, -wojewodztwo2, -id) 
