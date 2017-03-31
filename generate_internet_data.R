@@ -6,6 +6,10 @@
 load("./Diagnoza_dane-master/osoby.RData")
 load("./Diagnoza_dane-master/osobyDict.RData")
 
+load("data/ksztalt_wojewodztw_data_frame.Rdata")
+wojewodztwa_nazwy_kody <- mutate(wojewodztwa_nazwy_kody,
+                                 woj = iconv(woj))
+
 library(haven)
 library(dplyr)
 
@@ -52,7 +56,7 @@ internet_dat <- do.call(rbind, lapply(1:6, function(i) {
 write.csv(internet_dat, file = "internet_data.csv", row.names = FALSE)
 
 internet_dat <- read.csv(file = "internet_data.csv")
-load("data/ksztalt_wojewodztw_data_frame.Rdata")
+
 
 internet_podsumowanie <- internet_dat %>% 
   mutate(woj_id = as.character(woj_id)) %>% 
