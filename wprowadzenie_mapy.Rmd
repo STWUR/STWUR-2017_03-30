@@ -1,8 +1,18 @@
 ---
+layout: post
 title: "I Ty możesz zostać kartografem!"
-author: "Piotr J. Sobczyk"
-date: "25 March 2017"
-output: html_document
+author: "piotr"
+modified:
+categories: blog
+excerpt:
+tags: []
+image:
+  feature:
+date: 2017-03-30
+output:
+  md_document:
+    variant: markdown_github
+---
 ---
 
 ```{r setup, include=FALSE}

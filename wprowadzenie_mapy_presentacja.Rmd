@@ -1,7 +1,7 @@
 ---
 title: "I Ty możesz zostać kartografem!"
-author: "Piotr J. Sobczyk"
-date: "25 March 2017"
+author: "Piotr Sobczyk"
+date: "30 marca 2017"
 output:
   ioslides_presentation:
     incremental: true
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 * Ściągania map google, nanoszenia punktów na te mapy 
 * Znajdowania współrzędnych geograficznych miejscowości
-* Tworzenia map z obszarmi wyodrębnionymi kolorem (*choropleth*)
+* Tworzenia map z obszarami wyodrębnionymi kolorem (kartogramów)
 * Zacznijmy naszą przygodę.
 
 ## Instalacja niezbędnych pakietów
@@ -29,8 +29,9 @@ knitr::opts_chunk$set(echo = TRUE)
 Pliki: 
 
 * **wprowadzenie_mapy_prezentacja.Rmd** - ta prezentacja.
+* **wprowadzenie_mapy_presentacja.R** - kod R z tej prezentacji.
 * **wprowadzenie_mapy.Rmd** - porady jak tworzyć mapy w R (nie-prezentacja).
-* **wprowadzenie_mapy.R** - kod R z pliku **wprowadzenie_mapy.Rmd**.
+
 
 ## Instalacja niezbędnych pakietów
 
@@ -75,7 +76,7 @@ Oznaczmy na mapie Wrocławia miejsca, w których odbywały się spotkania STWURa
 
 ```{r, message=FALSE, cache = TRUE}
 miejsca <- c("Wydział Biotechnologii, Wrocław", "Infopunkt Łokietka", "Wydział Matematyki PWr")
-wspolrzedne <- geocode(miejsca)
+wspolrzedne <- geocode(miejsca) # dzienny limit użyć funkcji: 2500
 miejsca <- cbind(miejsca, wspolrzedne)
 miejsca$liczba_spotkan <- c(3, 1, 1)
 ```
@@ -106,7 +107,7 @@ ggmap(wroclaw_mapa) +
   theme_map() + scale_fill_discrete(name = "")
 ```
 
-# Choreopleth
+# Kartogram (choropleth)
 
 ----
 
@@ -122,43 +123,47 @@ knitr::include_graphics("wyksztalcenie_podregiony_w_czasie.png")
 
 ## Najpierw przetwarzamy dane
 
-```{r wczytanieDaneInternet, cache = TRUE, warning = FALSE}
+```{r wczytanieDaneInternet, cache = FALSE, warning = FALSE}
 internet_dat <- read.csv(file = "data/internet_data.csv")
 load("data/ksztalt_wojewodztw_data_frame.Rdata")
 
 internet_podsumowanie <- internet_dat %>% 
+  mutate(woj_id = as.character(woj_id)) %>% 
   filter(rok == 2015) %>%
-  group_by(wojewodztwo) %>%
-  summarise(przecietnie_godzin_internetu = sum(waga*godzin_internetu)/sum(waga)) %>%
-  mutate(wojewodztwo = tolower(wojewodztwo)) %>% 
-  inner_join(wojewodztwa_nazwy_kody, by = c("wojewodztwo"="woj"))
+  group_by(wojewodztwo, woj_id) %>%
+  summarise(przecietnie_godzin_internetu = sum(waga*godzin_internetu)/sum(waga)) 
 
-plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = "id")
+plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = c("id" = "woj_id"))
 ```
 
 ## Co się dzieje w kodzie powyżej krok po kroku
 
-Filtrowanie obserwacji z roku 2015
+Techniczne: zmiana typu zmiennej, aby umożliwić później łączenie danych.
 ```{r, eval = FALSE}
 internet_dat %>% 
+  mutate(woj_id = as.character(woj_id))
+```
+
+
+## Co się dzieje w kodzie powyżej krok po kroku
+
+Filtrowanie obserwacji z roku 2015
+
+```{r, eval = FALSE}
+internet_dat %>% 
+  mutate(woj_id = as.character(woj_id)) %>%
   filter(rok == 2015) 
 ```
 
 ## Co się dzieje w kodzie powyżej krok po kroku
 
-Policzenie procenta osób z wyższym wykształceniem w podziale na województwa
+Policzenie przeciętnej liczby godzin spędzonych w internecie w podziale na województwa
 ```{r, eval = FALSE}
-group_by(wojewodztwo) %>%
-  summarise(przecietnie_godzin_internetu = sum(waga*godzin_internetu)/sum(waga)) 
-```
-
-## Co się dzieje w kodzie powyżej krok po kroku
-
-Techniczne. Połączenie z data.frame *wojewodztwa_nazwy_kody*.
-
-```{r, eval = FALSE}
-mutate(wojewodztwo = tolower(wojewodztwo)) %>% 
-  inner_join(wojewodztwa_nazwy_kody, by = c("wojewodztwo"="woj")) 
+internet_dat %>% 
+  mutate(woj_id = as.character(woj_id)) %>%
+  filter(rok == 2015) %>%
+  group_by(wojewodztwo) %>%
+  summarise(procent_wyzsze_wyksztalcenie = sum(waga[edukacja == 'wyższe i policealne'])/sum(waga)) 
 ```
 
 ## Co się dzieje w kodzie powyżej krok po kroku
@@ -166,7 +171,7 @@ mutate(wojewodztwo = tolower(wojewodztwo)) %>%
 Połączenie z data.frame zwierającym definicje obszarów województw
 
 ```{r, eval = FALSE}
-plotData <- inner_join(Wojewodztwa, edu_podsumowanie, by = "id")
+plotData <- inner_join(Wojewodztwa, internet_podsumowanie, by = c("id" = "woj_id"))
 ```
 
 # Wizualizacja
@@ -179,7 +184,7 @@ ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
   geom_polygon(mapping = aes(group = group, fill = przecietnie_godzin_internetu))
 ```
 
----- {.flexbox .vcenter}
+----
 
 ![ ](figure/sad_puppy.jpeg)
 
@@ -214,20 +219,29 @@ ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
 * Dodajemy tytuł wykresu
 
 ----
-```{r, echo = FALSE, fig.height=5.5, fig.width=8.5}
+```{r, echo = FALSE, fig.height=5.5, fig.width=8}
 ggplot(data = plotData, mapping = aes(x = long, y = lat)) +
   geom_polygon(mapping = aes(group = group, fill = przecietnie_godzin_internetu)) +
   scale_fill_distiller("Godzin", palette = "YlGn", breaks = pretty_breaks(n = 6),
                        trans = "reverse") +
   guides(fill = guide_legend(reverse = TRUE)) +
   ggtitle(label = "Liczba godzin spędzanych tygodniowo w internecie", subtitle = "Średnia w podziale na województwa w 2015") + 
-  theme_map(base_size = 18) +
-  theme(plot.title = element_text(size = 20, hjust = 0.5, family = "mono"),
-        plot.subtitle = element_text(size = 18, hjust = 0.5, family = "mono"),
+  theme_map(base_size = 17) +
+  theme(plot.title = element_text(size = 18, hjust = 0.5, family = "mono"),
+        plot.subtitle = element_text(size = 17, hjust = 0.5, family = "mono"),
         legend.position = "right",
         legend.key.height = unit(1.7, "cm"),
         legend.key.width = unit(1.1, "cm"))
 ```
 
+## Podziękowania
 
+Nasi sponsorzy:
+
+* Doktoranckie Koło Naukowe Bioinformatyki,
+* Koło Naukowe Statystyki Matematycznej Gauss,
+* Uniwersytet Wrocławski,
+* Krajowy Naukowy Ośrodek Wiodący Wrocławskie Centrum Biotechnologii.
+
+Spotkanie socjalne: 20:00, Przekręt (Curie-Skłodowskiej 1)
 
