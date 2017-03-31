@@ -123,7 +123,7 @@ knitr::include_graphics("wyksztalcenie_podregiony_w_czasie.png")
 
 ## Najpierw przetwarzamy dane
 
-```{r wczytanieDaneInternet, cache = TRUE, warning = FALSE}
+```{r wczytanieDaneInternet, cache = FALSE, warning = FALSE}
 internet_dat <- read.csv(file = "data/internet_data.csv")
 load("data/ksztalt_wojewodztw_data_frame.Rdata")
 
