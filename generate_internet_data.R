@@ -53,9 +53,8 @@ internet_dat <- do.call(rbind, lapply(1:6, function(i) {
   mutate(woj_id = id) %>% 
   select(-teryt, -wojewodztwo2, -id) 
 
-write.csv(internet_dat, file = "internet_data.csv", row.names = FALSE)
+write.csv(internet_dat, file = "./data/internet_data.csv", row.names = FALSE)
 
-internet_dat <- read.csv(file = "internet_data.csv")
 
 
 internet_podsumowanie <- internet_dat %>% 
